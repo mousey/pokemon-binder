@@ -2133,9 +2133,9 @@ function updateSyncUI(status) {
 function openQrSyncModal() {
   const m = openModal(`
     <div class="qr-sync-modal">
-      <h3 style="margin-top:0; text-align:center;">📱 Sync with Phone via QR Code</h3>
+      <h3 style="margin-top:0; text-align:center;">📱 Sync via QR Code</h3>
       <p class="small" style="text-align:center; margin-bottom:12px;">
-        Open the camera app on your phone, point it at this QR code, and tap the notification link!
+        Scan this QR code with another device's camera to instantly transfer your cards or link devices!
       </p>
 
       <div class="tabs" style="margin-bottom:12px;">
@@ -2146,7 +2146,7 @@ function openQrSyncModal() {
       <div class="qr-code-box" id="qrContainer"></div>
 
       <div id="qrInfoText" class="small" style="text-align:center; margin-top:10px; color:#475569;">
-        Transferring all ${state.items.reduce((a, b) => a + b.qty, 0)} cards directly to your phone.
+        Transferring all ${state.items.reduce((a, b) => a + b.qty, 0)} cards directly to another device.
       </div>
 
       <div style="margin-top:14px; display:flex; justify-content:center; gap:8px;">
@@ -2176,7 +2176,7 @@ function openQrSyncModal() {
       };
       const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
       targetUrl = `${baseOrigin}#sync=${encoded}`;
-      $('#qrInfoText', m).innerHTML = `📦 <b>Card Transfer QR</b>: Scans your ${state.items.length} cards directly into your phone's binder without any accounts or setup!`;
+      $('#qrInfoText', m).innerHTML = `📦 <b>Card Transfer QR</b>: Scans your ${state.items.length} cards directly into another device's binder without any accounts or setup!`;
     } else {
       if (!state.sync?.enabled || !state.sync?.url || !state.sync?.code) {
         container.innerHTML = `<div style="text-align:center; color:var(--muted); padding:20px;">Enable <b>Live Cloud Sync</b> below first to pair devices via QR!</div>`;
@@ -2188,7 +2188,7 @@ function openQrSyncModal() {
       };
       const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
       targetUrl = `${baseOrigin}#sync=${encoded}`;
-      $('#qrInfoText', m).innerHTML = `☁️ <b>Cloud Pairing QR</b>: Connects your phone to room <b>${esc(state.sync.code)}</b> automatically!`;
+      $('#qrInfoText', m).innerHTML = `☁️ <b>Cloud Pairing QR</b>: Connects your other device to room <b>${esc(state.sync.code)}</b> automatically!`;
     }
 
     try {
@@ -2334,42 +2334,42 @@ function openSettings() {
       <p class="small">Not needed! But a free key from <a href="https://dev.pokemontcg.io" target="_blank" rel="noopener">dev.pokemontcg.io</a> makes searches faster and allows more of them.</p>
 
       <!-- 🔄 Device Sync Section -->
-      <h3>🔄 Device Sync (Phone &amp; Mac)</h3>
+      <h3>🔄 Device Sync</h3>
 
-      <!-- Option 2: Instant QR Code Sync -->
+      <!-- QR Code Sync (for smaller binders) -->
       <div class="sync-settings-card" style="border-color:#3b4cca; background:#f0f4ff;">
         <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
           <div style="font-weight:700; font-size:1.05rem; color:#1e293b; display:flex; align-items:center; gap:6px;">
-            <span>📱 Option 2: Instant QR Code Sync</span>
+            <span>📱 QR Code Sync (for smaller binders)</span>
           </div>
           <button class="btn btn-trade" id="settingsQrBtn" type="button" style="padding:6px 14px; font-size:0.9rem;">
             <span>📱</span> Show QR Code
           </button>
         </div>
         <p class="small" style="margin:6px 0 0; color:#475569;">
-          <b>No setup, no accounts!</b> Point your phone camera at your Mac screen to instantly copy your whole binder onto your phone, or pair devices.
+          <b>No setup, no accounts!</b> Scan the QR code with another device's camera to instantly transfer your cards or link devices.
         </p>
       </div>
 
-      <!-- Option 1: Live Cloud Sync -->
+      <!-- Cloud Sync (for larger binders) -->
       <div class="sync-settings-card ${state.sync.enabled ? 'active' : ''}" id="syncCard">
         <div class="sync-toggle-row">
           <label class="sync-toggle-label" for="syncToggle">
-            <span>⚡ Option 1: Live Cloud Sync (Firebase)</span>
+            <span>☁️ Cloud Sync (for larger binders)</span>
           </label>
           <input type="checkbox" id="syncToggle" ${state.sync.enabled ? 'checked' : ''} style="width:22px; height:22px; cursor:pointer;" />
         </div>
-        <p class="small" style="margin:0;">Whenever you or your son add or trade cards, both devices update in real-time!</p>
+        <p class="small" style="margin:0;">Whenever cards are added or updated on any device, all connected devices update automatically in real time!</p>
 
         <div id="syncSettingsBody" class="${state.sync.enabled ? '' : 'hidden'}" style="display:flex; flex-direction:column; gap:10px; margin-top:6px;">
           <label class="field" style="margin:0;">
-            <span>Secret Sync Code (Family Code)</span>
+            <span>Secret Sync Room Code</span>
             <div class="sync-code-input-group">
               <input id="syncCodeInput" value="${esc(state.sync.code || generateSyncCode())}" placeholder="e.g. PIKACHU-4821" maxlength="24" />
               <button class="btn btn-ghost" id="syncGenBtn" type="button" title="Generate a fun new code">🎲 New Code</button>
             </div>
           </label>
-          <p class="small" style="margin:0;">Enter this exact code on your phone and Mac to share the same binder.</p>
+          <p class="small" style="margin:0;">Enter this exact code on your other devices to share the same binder.</p>
 
           <label class="field" style="margin:0;">
             <span>Firebase Database URL</span>
