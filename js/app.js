@@ -1793,13 +1793,13 @@ function openScanner() {
           <div class="scanner-corner tr"></div>
           <div class="scanner-corner bl"></div>
           <div class="scanner-corner br"></div>
-          <div class="scanner-number-target">🎯 Align bottom number (e.g. 069/187)</div>
+          <div class="scanner-number-target">🎯 Bottom number (e.g. 069/187)</div>
           <div class="scanner-laser"></div>
         </div>
       </div>
 
       <div class="scanner-status" id="scannerStatus">
-        Starting camera… 🎯 Align the Pokémon card in the frame!
+        Starting camera… 🎯 Align the full card inside the green frame!
       </div>
 
       <div class="scanner-actions">
@@ -1809,9 +1809,9 @@ function openScanner() {
 
       <!-- Quick manual fallback helper -->
       <div class="scanner-manual-box">
-        <label for="scannerManualInput" class="scanner-manual-label">Or enter card code:</label>
+        <label for="scannerManualInput" class="scanner-manual-label">Card number or name:</label>
         <div class="scanner-manual-row">
-          <input id="scannerManualInput" placeholder="e.g. 069/187 or MEW 025" />
+          <input id="scannerManualInput" placeholder="e.g. 069/187 or Zapdos" />
           <button class="btn btn-add" id="scannerManualBtn">Find</button>
         </div>
       </div>
@@ -1837,7 +1837,7 @@ function openScanner() {
         video.srcObject = stream;
         video.play().catch(() => {});
       }
-      status.innerHTML = 'Camera ready! 🎯 <b>Align the card in the frame</b>, especially the bottom number.';
+      status.innerHTML = 'Camera ready! 🎯 <b>Align the full card inside the green frame</b> (bottom numbers in yellow zone).';
     }).catch((err) => {
       console.warn('Live camera stream not permitted or unavailable:', err);
       status.innerHTML = 'Live camera stream not available. Tap <b>⚡ Scan / Snap Picture</b> or enter code below!';
@@ -1915,8 +1915,8 @@ function openScanner() {
       return;
     }
 
-    // Fallback: If OCR API didn't report text, allow instant manual confirm
-    status.innerHTML = `Card photo captured! 📷 Check the numbers on the bottom corner and confirm below:`;
+    // Fallback: If OCR API didn't report text, allow instant confirm
+    status.innerHTML = `Card photo captured! 📷 Check the card name or bottom number and confirm below:`;
     if (manualInput.value.trim()) {
       await searchDetected(manualInput.value.trim());
     } else {
@@ -1925,6 +1925,16 @@ function openScanner() {
   };
 
   $('#scannerSnapBtn', m).onclick = () => {
+    // If already showing a snapshot, clicking allows user to retake
+    if (snap && !snap.classList.contains('hidden') && activeStream && video) {
+      snap.classList.add('hidden');
+      video.classList.remove('hidden');
+      $('#scannerSnapBtn', m).innerHTML = '<span>⚡</span> Scan / Snap Picture';
+      status.innerHTML = 'Camera ready! 🎯 <b>Align the full card inside the green frame</b>.';
+      matchesEl.innerHTML = '';
+      return;
+    }
+
     if (activeStream && video && !video.classList.contains('hidden') && video.videoWidth) {
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
@@ -1933,6 +1943,7 @@ function openScanner() {
       snap.src = canvas.toDataURL('image/jpeg', 0.9);
       snap.classList.remove('hidden');
       video.classList.add('hidden');
+      $('#scannerSnapBtn', m).innerHTML = '<span>🔄</span> Retake Picture';
       processCanvas();
     } else {
       $('#cameraInput').click();
