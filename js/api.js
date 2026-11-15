@@ -162,6 +162,106 @@ const API = (() => {
     return starts ? starts[0] : null;
   }
 
+  /* ---------------------------- energy fallback ---------------------------- */
+  const ENERGY_CONFIG = {
+    Grass:     { name: 'Grass Energy',     c1: '#0a3315', c2: '#1e6b2c', c3: '#48b056', icon: '🌿', symbol: 'GRASS' },
+    Fire:      { name: 'Fire Energy',      c1: '#420f07', c2: '#ad2610', c3: '#f76828', icon: '🔥', symbol: 'FIRE' },
+    Water:     { name: 'Water Energy',     c1: '#08274a', c2: '#1664a6', c3: '#3ca6f5', icon: '💧', symbol: 'WATER' },
+    Lightning: { name: 'Lightning Energy', c1: '#473800', c2: '#a88400', c3: '#ffd700', icon: '⚡', symbol: 'LIGHTNING' },
+    Psychic:   { name: 'Psychic Energy',   c1: '#2c0b3b', c2: '#6a1b9a', c3: '#ba68c8', icon: '🔮', symbol: 'PSYCHIC' },
+    Fighting:  { name: 'Fighting Energy',  c1: '#3d1b09', c2: '#8c3b12', c3: '#d97036', icon: '👊', symbol: 'FIGHTING' },
+    Darkness:  { name: 'Darkness Energy',  c1: '#0f141c', c2: '#222c3c', c3: '#475569', icon: '🌙', symbol: 'DARKNESS' },
+    Metal:     { name: 'Metal Energy',     c1: '#1e242b', c2: '#4a5763', c3: '#94a3b8', icon: '⚙️', symbol: 'METAL' },
+    Fairy:     { name: 'Fairy Energy',     c1: '#3b0a26', c2: '#991b58', c3: '#f06292', icon: '🧚', symbol: 'FAIRY' },
+    Dragon:    { name: 'Dragon Energy',    c1: '#3b3009', c2: '#7d6514', c3: '#c49c29', icon: '🐉', symbol: 'DRAGON' },
+    Colorless: { name: 'Colorless Energy', c1: '#23272e', c2: '#4b5563', c3: '#9ca3af', icon: '⭐', symbol: 'COLORLESS' },
+  };
+
+  const escapeXml = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+  function isEnergyCard(c) {
+    if (!c) return false;
+    const name = String(c.name || '').toLowerCase();
+    const st = String(c.supertype || c.category || '').toLowerCase();
+    const set = String(c.setCode || c.setId || c.set?.id || '').toLowerCase();
+    if (st === 'energy') return true;
+    if (/\benergy\b/i.test(name)) return true;
+    if (set === 'sve' || set === 'mee') return true;
+    if (Array.isArray(c.subtypes) && c.subtypes.some((s) => /energy/i.test(s))) return true;
+    return false;
+  }
+
+  function detectEnergyType(name = '', num = '', setCode = '') {
+    const n = String(name || '').toLowerCase();
+    if (n.includes('grass') || n.includes('leaf')) return 'Grass';
+    if (n.includes('fire')) return 'Fire';
+    if (n.includes('water')) return 'Water';
+    if (n.includes('lightning') || n.includes('electric')) return 'Lightning';
+    if (n.includes('psychic')) return 'Psychic';
+    if (n.includes('fighting')) return 'Fighting';
+    if (n.includes('darkness') || n.includes('dark')) return 'Darkness';
+    if (n.includes('metal') || n.includes('steel')) return 'Metal';
+    if (n.includes('fairy')) return 'Fairy';
+    if (n.includes('dragon')) return 'Dragon';
+    if (n.includes('colorless')) return 'Colorless';
+    const parsed = parseInt(String(num).replace(/\D+/g, ''), 10);
+    if (!isNaN(parsed) && parsed > 0) {
+      const cycle = ['Grass', 'Fire', 'Water', 'Lightning', 'Psychic', 'Fighting', 'Darkness', 'Metal'];
+      return cycle[(parsed - 1) % cycle.length];
+    }
+    return 'Colorless';
+  }
+
+  function makeEnergyCardSvg(name, num, setCode, total) {
+    const type = detectEnergyType(name, num, setCode);
+    const cfg = ENERGY_CONFIG[type] || ENERGY_CONFIG.Colorless;
+    const dispName = (name && /energy/i.test(name)) ? name : cfg.name;
+    const numStr = String(num || '').padStart(3, '0');
+    const setStr = String(setCode || 'ENG').toUpperCase();
+    const badgeStr = total ? `${setStr} · #${numStr}/${total}` : `${setStr} · #${numStr}`;
+    const gradId = `eg_${type.toLowerCase()}`;
+
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 245 342" width="245" height="342">
+  <defs>
+    <radialGradient id="${gradId}" cx="50%" cy="45%" r="65%">
+      <stop offset="0%" stop-color="${cfg.c3}"/>
+      <stop offset="55%" stop-color="${cfg.c2}"/>
+      <stop offset="100%" stop-color="${cfg.c1}"/>
+    </radialGradient>
+    <linearGradient id="egBorder" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffd875"/>
+      <stop offset="50%" stop-color="#bfa054"/>
+      <stop offset="100%" stop-color="#635124"/>
+    </linearGradient>
+    <filter id="egGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+  <rect width="245" height="342" rx="14" fill="#18181b"/>
+  <rect x="7" y="7" width="231" height="328" rx="10" fill="url(#${gradId})" stroke="url(#egBorder)" stroke-width="2.5"/>
+  <rect x="14" y="14" width="217" height="314" rx="8" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="1"/>
+  <circle cx="122.5" cy="162" r="78" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="16"/>
+  <circle cx="122.5" cy="162" r="56" fill="rgba(255,255,255,0.12)" stroke="rgba(255,255,255,0.25)" stroke-width="2"/>
+  <circle cx="122.5" cy="162" r="40" fill="rgba(0,0,0,0.18)"/>
+  <rect x="18" y="22" width="209" height="34" rx="6" fill="rgba(0,0,0,0.45)" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+  <text x="28" y="44" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-size="13" font-weight="800" fill="#ffffff" letter-spacing="0.5">${escapeXml(dispName.toUpperCase())}</text>
+  <text x="217" y="44" text-anchor="end" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-size="11" font-weight="700" fill="#ffd54f">ENERGY</text>
+  <text x="122.5" y="72" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-size="9" font-weight="600" fill="rgba(255,255,255,0.75)" letter-spacing="1.5">BASIC ENERGY CARD</text>
+  <circle cx="122.5" cy="162" r="32" fill="${cfg.c2}" stroke="#ffffff" stroke-width="3" filter="url(#egGlow)"/>
+  <text x="122.5" y="173" text-anchor="middle" font-size="30" font-family="Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, sans-serif">${cfg.icon}</text>
+  <text x="122.5" y="230" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-size="13" font-weight="800" fill="#ffffff" letter-spacing="1.5">${cfg.symbol}</text>
+  <rect x="18" y="292" width="209" height="24" rx="4" fill="rgba(0,0,0,0.55)" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+  <text x="28" y="308" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-size="10" font-weight="700" fill="#e2e8f0" letter-spacing="0.5">${escapeXml(badgeStr)}</text>
+  <text x="217" y="308" text-anchor="end" font-size="12" font-family="Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, sans-serif">${cfg.icon}</text>
+</svg>`;
+
+    return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+  }
+
+  window.isEnergyCard = isEnergyCard;
+  window.makeEnergyCardSvg = makeEnergyCardSvg;
+
   /* ---------------------------- normalisers ---------------------------- */
 
   function dexPricing(p = {}) {
@@ -197,6 +297,14 @@ const API = (() => {
     const img = c.image ? c.image : '';
     const isJa = lang === 'ja';
     const jset = isJa ? jaSet(s.id) : null;
+    const isEnergy = isEnergyCard({ name: c.name, category: c.category, set: s, setCode: s.abbreviation?.official || s.id, setId: s.id });
+    let imgSmall = img ? img + '/low.webp' : '';
+    let imgLarge = img ? img + '/high.webp' : '';
+    if (!img && isEnergy) {
+      const fallbackSvg = makeEnergyCardSvg(c.name, c.localId, isJa ? s.id : (s.abbreviation?.official || s.id), s.cardCount?.official || s.cardCount?.total || jset?.official);
+      imgSmall = fallbackSvg;
+      imgLarge = fallbackSvg;
+    }
     const card = {
       id: isJa ? `ja:${c.id}` : c.id,
       lang,
@@ -274,8 +382,16 @@ const API = (() => {
   }
 
   function briefDex(c, setName = '', lang = 'en') {
-    const img = c.image ? c.image + '/low.webp' : '';
     const isJa = lang === 'ja';
+    const sId = c.set?.id || '';
+    const isEnergy = isEnergyCard({ name: c.name, category: c.category, setCode: sId, setId: sId });
+    let imgSmall = c.image ? c.image + '/low.webp' : '';
+    let imgLarge = c.image ? c.image + '/high.webp' : '';
+    if (!c.image && isEnergy) {
+      const fallbackSvg = makeEnergyCardSvg(c.name, c.localId, sId, c.set?.cardCount?.official || c.set?.cardCount?.total);
+      imgSmall = fallbackSvg;
+      imgLarge = fallbackSvg;
+    }
     return {
       id: isJa ? `ja:${c.id}` : c.id,
       lang,
@@ -284,8 +400,8 @@ const API = (() => {
       nameJa: isJa ? c.name : '',
       number: c.localId,
       setName: setName || c.set?.name || '',
-      imgSmall: img,
-      imgLarge: c.image ? c.image + '/high.webp' : '',
+      imgSmall,
+      imgLarge,
       full: null,
     };
   }
@@ -300,6 +416,14 @@ const API = (() => {
 
   function cardFromOffline(id, name, setId, num) {
     const set = (window.OFFLINE_SETS || []).find((s) => s.id === setId) || { name: setId, official: '' };
+    const isEnergy = isEnergyCard({ name, setId, setCode: setId, supertype: 'Energy' });
+    let imgSmall = `https://assets.tcgdex.net/en/${setId.replace(/\d.*$/, '')}/${setId}/${num}/low.webp`;
+    let imgLarge = `https://assets.tcgdex.net/en/${setId.replace(/\d.*$/, '')}/${setId}/${num}/high.webp`;
+    if (isEnergy && /^(sve|mee)$/i.test(setId)) {
+      const svg = makeEnergyCardSvg(name, num, setId, set.official);
+      imgSmall = svg;
+      imgLarge = svg;
+    }
     return {
       ...emptyOffline(),
       id,
@@ -312,9 +436,10 @@ const API = (() => {
       setCode: (setId || '').toUpperCase(),
       printedTotal: set.official || '',
       setSymbol: set.symbol ? set.symbol + '.png' : '',
-      imgSmall: `https://assets.tcgdex.net/en/${setId.replace(/\d.*$/, '')}/${setId}/${num}/low.webp`,
-      imgLarge: `https://assets.tcgdex.net/en/${setId.replace(/\d.*$/, '')}/${setId}/${num}/high.webp`,
+      imgSmall,
+      imgLarge,
       dex: [],
+      supertype: isEnergy ? 'Energy' : 'Pokémon',
     };
   }
 
@@ -671,6 +796,8 @@ const API = (() => {
 
   return {
     setKey, searchByCode, searchByName, getCard, getCardsBulk, getSets, getSetCards, getRates,
-    resolveOffline, translateJa,
+    resolveOffline, translateJa, isEnergyCard, makeEnergyCardSvg,
   };
 })();
+
+window.API = API;

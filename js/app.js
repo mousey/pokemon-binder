@@ -5,8 +5,8 @@
    ========================================================================= */
 'use strict';
 
-const APP_VERSION = 'v1.5.2';
-const APP_BUILD = '4c51ed9';
+const APP_VERSION = 'v1.5.3';
+const APP_BUILD = '8b88ebe';
 
 /* ------------------------------ helpers ------------------------------ */
 const $ = (s, r = document) => r.querySelector(s);
@@ -20,6 +20,50 @@ const numOf = (n) => { const m = String(n ?? '').match(/\d+/); return m ? parseI
 
 const CARD_BACK = 'data:image/svg+xml;utf8,' + encodeURIComponent(
   `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 245 342"><rect width="245" height="342" rx="14" fill="#1d4fa8"/><rect x="10" y="10" width="225" height="322" rx="10" fill="#2a6fd6" stroke="#f5c518" stroke-width="4"/><circle cx="122" cy="171" r="58" fill="#fff" stroke="#222" stroke-width="8"/><path d="M64 171a58 58 0 0 1 116 0z" fill="#e3350d" stroke="#222" stroke-width="8"/><circle cx="122" cy="171" r="16" fill="#fff" stroke="#222" stroke-width="8"/></svg>`);
+
+function cardImg(c, large = false) {
+  if (!c) return CARD_BACK;
+  const direct = large ? (c.imgLarge || c.imgSmall) : (c.imgSmall || c.imgLarge);
+  const isBrokenTcgdex = direct && (direct.includes('assets.tcgdex.net/en/sve') || direct.includes('assets.tcgdex.net/en/mee'));
+  if (direct && direct !== CARD_BACK && !isBrokenTcgdex) {
+    return direct;
+  }
+  if (window.isEnergyCard && window.isEnergyCard(c)) {
+    return window.makeEnergyCardSvg(c.name, c.number, c.setCode || c.setId, c.printedTotal);
+  }
+  return direct || CARD_BACK;
+}
+
+window.handleImgError = function(el, name, number, setCode, printedTotal, supertype) {
+  el.onerror = null;
+  if (window.isEnergyCard && window.isEnergyCard({ name, number, setCode, printedTotal, supertype })) {
+    el.src = window.makeEnergyCardSvg(name, number, setCode, printedTotal);
+  } else {
+    el.src = CARD_BACK;
+  }
+};
+
+function imgErr(c) {
+  if (!c) return 'onerror="this.onerror=null;this.src=CARD_BACK"';
+  return `onerror="handleImgError(this, '${esc(c.name)}', '${esc(c.number)}', '${esc(c.setCode || c.setId || '')}', '${esc(c.printedTotal || '')}', '${esc(c.supertype || '')}')"`;
+}
+
+function repairEnergyCards(items) {
+  if (!Array.isArray(items) || !window.makeEnergyCardSvg) return;
+  items.forEach((item) => {
+    const c = item.card;
+    if (!c) return;
+    const isEnergy = window.isEnergyCard ? window.isEnergyCard(c) : (/\benergy\b/i.test(c.name || '') || /^(sve|mee)$/i.test(c.setId || c.setCode || ''));
+    if (isEnergy) {
+      const needsFix = !c.imgSmall || c.imgSmall.includes('assets.tcgdex.net/en/sve') || c.imgSmall.includes('assets.tcgdex.net/en/mee') || c.imgSmall === CARD_BACK;
+      if (needsFix) {
+        const svg = window.makeEnergyCardSvg(c.name, c.number, c.setCode || c.setId, c.printedTotal);
+        c.imgSmall = svg;
+        c.imgLarge = svg;
+      }
+    }
+  });
+}
 
 /* ----------------------------- constants ----------------------------- */
 const TYPES = {
@@ -75,12 +119,15 @@ function defaults() {
 function load() {
   try {
     const s = JSON.parse(localStorage.getItem(STORE));
-    if (s && Array.isArray(s.items)) return {
-      ...defaults(),
-      ...s,
-      prefs: { ...defaults().prefs, ...(s.prefs || {}) },
-      sync: { ...defaults().sync, ...(s.sync || {}) },
-    };
+    if (s && Array.isArray(s.items)) {
+      repairEnergyCards(s.items);
+      return {
+        ...defaults(),
+        ...s,
+        prefs: { ...defaults().prefs, ...(s.prefs || {}) },
+        sync: { ...defaults().sync, ...(s.sync || {}) },
+      };
+    }
   } catch (e) { console.warn(e); }
   return defaults();
 }
@@ -332,7 +379,7 @@ function tileHTML(item, { meta = false } = {}) {
   return `
   <button class="card-tile ${v.fx} ${item.uid === ui.flashUid ? 'flash' : ''}" data-uid="${item.uid}" title="${esc(c.name)} – ${esc(c.setName)} #${esc(c.number)}">
     <div class="card-img-wrap">
-      <img loading="lazy" src="${esc(c.imgSmall || CARD_BACK)}" alt="${esc(c.name)}" onerror="this.onerror=null;this.src=CARD_BACK" />
+      <img loading="lazy" src="${esc(cardImg(c))}" alt="${esc(c.name)}" ${imgErr(c)} />
       <span class="glare"></span>
     </div>
     ${item.qty > 1 ? `<span class="qty-badge">×${item.qty}</span>` : ''}
@@ -584,7 +631,7 @@ function renderPokedex(list, anim = '') {
                 ${v.key !== 'normal' ? `<span class="vbadge">${v.icon}</span>` : ''}
                 ${item.shiny ? '<span class="vbadge">⭐</span>' : ''}
               </div>
-              <img src="${esc(c.imgLarge || c.imgSmall || CARD_BACK)}" alt="${esc(c.name)}" onerror="this.onerror=null;this.src=CARD_BACK" />
+              <img src="${esc(cardImg(c, true))}" alt="${esc(c.name)}" ${imgErr(c)} />
             </div>
           </div>
 
@@ -1018,7 +1065,7 @@ function openDetail(uidv, period = 30) {
         <div class="cs-col cs-col-center">
           <div class="tilt-stage">
             <div class="tilt ${v.fx}" id="tiltCard">
-              <img src="${esc(c.imgLarge || c.imgSmall || CARD_BACK)}" alt="${esc(c.name)}" onerror="this.onerror=null;this.src=CARD_BACK" />
+              <img src="${esc(cardImg(c, true))}" alt="${esc(c.name)}" ${imgErr(c)} />
             </div>
           </div>
           <div class="hint">👆 Move over card to shine &amp; tilt!</div>
@@ -1180,7 +1227,7 @@ function openValue(period = 30) {
         ${top.map((i, n) => `
           <button class="top-row" data-uid="${i.uid}">
             <span class="top-rank">${n + 1}</span>
-            <img src="${esc(i.card.imgSmall || CARD_BACK)}" alt="" onerror="this.onerror=null;this.src=CARD_BACK" />
+            <img src="${esc(cardImg(i.card))}" alt="" ${imgErr(i.card)} />
             <span class="top-name">${esc(i.card.name)}<small>${esc(i.card.setName)} · ${variantOf(i.variant).label}${i.qty > 1 ? ' · ×' + i.qty : ''}</small></span>
             <b>${fmt(totalUSD(i))}</b>
           </button>`).join('') || '<p>No cards yet!</p>'}
@@ -1323,7 +1370,7 @@ function openTrade(initialItem = null) {
 
             <div class="trade-card-body">
               <div class="trade-card-thumb ${myVar ? myVar.fx : ''}">
-                <img src="${esc(myCard?.imgLarge || myCard?.imgSmall || CARD_BACK)}" alt="" onerror="this.onerror=null;this.src=CARD_BACK" />
+                <img src="${esc(cardImg(myCard, true))}" alt="" ${imgErr(myCard)} />
               </div>
               <div class="trade-card-info">
                 ${myCard ? `
@@ -1370,7 +1417,7 @@ function openTrade(initialItem = null) {
               <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(75px, 1fr)); gap:6px; max-height:120px; overflow-y:auto; padding:4px;">
                 ${tradeState.theirCandidates.slice(0, 12).map((c, idx) => `
                   <button type="button" class="btn btn-ghost" data-cand="${idx}" style="padding:4px; flex-direction:column; border-radius:8px;">
-                    <img src="${esc(c.imgSmall || CARD_BACK)}" style="width:100%; aspect-ratio:63/88; border-radius:4px; object-fit:cover;" />
+                    <img src="${esc(cardImg(c))}" ${imgErr(c)} style="width:100%; aspect-ratio:63/88; border-radius:4px; object-fit:cover;" />
                     <span style="font-size:0.7rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:65px;">${esc(c.name)}</span>
                   </button>
                 `).join('')}
@@ -1379,7 +1426,7 @@ function openTrade(initialItem = null) {
 
             <div class="trade-card-body">
               <div class="trade-card-thumb ${theirVar ? theirVar.fx : ''}">
-                <img src="${esc(theirCard?.imgLarge || theirCard?.imgSmall || CARD_BACK)}" alt="" onerror="this.onerror=null;this.src=CARD_BACK" />
+                <img src="${esc(cardImg(theirCard, true))}" alt="" ${imgErr(theirCard)} />
               </div>
               <div class="trade-card-info">
                 ${theirCard ? `
@@ -1671,7 +1718,7 @@ function drawResults() {
     <div class="result-grid">
       ${list.slice(0, 300).map((c, i) => `
         <button class="result" data-i="${addState.results.indexOf(c)}">
-          <img loading="lazy" src="${esc(c.imgSmall || CARD_BACK)}" alt="${esc(c.name)}" onerror="this.onerror=null;this.src=CARD_BACK" />
+          <img loading="lazy" src="${esc(cardImg(c))}" alt="${esc(c.name)}" ${imgErr(c)} />
           <div class="r-name">${esc(c.name)}</div>
           <div class="r-sub">${esc(c.setName || '')} · #${esc(c.number)}</div>
           ${state.items.some((it) => it.cardId === c.id) ? '<span class="owned">✔ Got it</span>' : ''}
@@ -1705,7 +1752,7 @@ async function openConfirm(cand) {
       <div class="detail">
         <div class="detail-left">
           <div class="tilt-stage">
-            <div class="tilt ${v.fx}" id="tiltCard"><img src="${esc(card.imgLarge || card.imgSmall || CARD_BACK)}" alt="${esc(card.name)}" onerror="this.onerror=null;this.src=CARD_BACK" /></div>
+            <div class="tilt ${v.fx}" id="tiltCard"><img src="${esc(cardImg(card, true))}" alt="${esc(card.name)}" ${imgErr(card)} /></div>
           </div>
           <div class="hint">Is this your card? 👀</div>
           ${cardFactsHTML(card)}
@@ -1769,7 +1816,7 @@ async function openConfirm(cand) {
 function showAdded(item, qty) {
   const m = openModal(`
     <div class="added">
-      <div class="added-card ${variantOf(item.variant).fx}"><img src="${esc(item.card.imgSmall || CARD_BACK)}" alt="" onerror="this.onerror=null;this.src=CARD_BACK"/></div>
+      <div class="added-card ${variantOf(item.variant).fx}"><img src="${esc(cardImg(item.card))}" alt="" ${imgErr(item.card)}/></div>
       <h2>Gotcha! ${esc(item.card.name)} was added!</h2>
       <p>${qty > 1 ? `${qty} cards` : '1 card'} · ${variantOf(item.variant).label} · you now have ${item.qty}</p>
       <div class="added-actions">
@@ -2011,7 +2058,7 @@ function openScanner() {
     matchesEl.innerHTML = results.slice(0, 10).map((r, i) => `
       <div class="scanner-hit" data-idx="${i}">
         <div class="scanner-hit-thumb">
-          <img src="${esc(r.imgSmall || CARD_BACK)}" alt="" onerror="this.onerror=null;this.src=CARD_BACK" />
+          <img src="${esc(cardImg(r))}" alt="" ${imgErr(r)} />
         </div>
         <div class="scanner-hit-info">
           <div class="scanner-hit-name">${esc(r.name)} ${r.lang === 'ja' ? '🇯🇵' : ''}</div>
