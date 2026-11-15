@@ -486,34 +486,63 @@ const API = (() => {
   }
 
   async function searchByName(name, { includeJa = false } = {}) {
-    const clean = name.trim().replace(/[^\p{L}\p{N}\s'\-.&]/gu, '').trim();
+    let clean = name.trim().replace(/[^\p{L}\p{N}\s'\-.&/]/gu, '').trim();
     if (!clean) return [];
+
+    // Support "Name Number" e.g. "Zapdos 029", "Zapdos 29", "Zapdos #029", "Pikachu 25"
+    let targetNum = null;
+    const nameNumMatch = clean.match(/^(.+?)\s+#?(\d{1,4})(?:\s*\/\s*\d+)?$/i);
+    if (nameNumMatch && nameNumMatch[1].trim().length >= 2) {
+      clean = nameNumMatch[1].trim();
+      targetNum = nameNumMatch[2].trim();
+    }
+
     const jaRes = (includeJa || HAS_JA.test(clean)) ? offlineJaByName(clean) : [];
+    let allResults = [];
 
     // Online search via TCGdex
     if (!HAS_JA.test(clean)) {
       try {
         const list = await dex(`/cards?name=${encodeURIComponent(clean)}`);
         if (Array.isArray(list) && list.length) {
-          return [...list.slice(0, 120).reverse().map((c) => briefDex(c)), ...jaRes];
+          allResults = [...list.slice(0, 150).reverse().map((c) => briefDex(c)), ...jaRes];
         }
       } catch { /* fall back to offline name search */ }
     }
 
-    // Offline search from local index
-    const cards = window.OFFLINE_CARDS || {};
-    const term = clean.toLowerCase();
-    const matches = [];
-    if (!HAS_JA.test(clean)) {
+    // Offline search from local index if needed
+    if (!allResults.length && !HAS_JA.test(clean)) {
+      const cards = window.OFFLINE_CARDS || {};
+      const term = clean.toLowerCase();
+      const matches = [];
       for (const [id, cName] of Object.entries(cards)) {
         if (cName.toLowerCase().includes(term)) {
           const i = id.lastIndexOf('-');
           matches.push(cardFromOffline(id, cName, id.slice(0, i), id.slice(i + 1)));
-          if (matches.length >= 60) break;
+          if (matches.length >= 80) break;
         }
       }
+      allResults = [...matches, ...jaRes];
     }
-    return [...matches, ...jaRes];
+
+    // If a number was specified (e.g. "Zapdos 029" or "Zapdos 29"), filter cards by that number!
+    if (targetNum && allResults.length) {
+      const normTarget = targetNum.replace(/^0+/, '') || '0';
+      const filtered = allResults.filter((c) => {
+        const cNum = String(c.number || '').trim();
+        const cNorm = cNum.replace(/^0+/, '') || '0';
+        if (cNum === targetNum || cNorm === normTarget) return true;
+        if (cNum.startsWith(targetNum) || cNorm.startsWith(normTarget)) return true;
+        if (cNum.padStart(3, '0').startsWith(targetNum)) return true;
+        if (c.id && (c.id.endsWith('-' + targetNum) || c.id.endsWith('-' + normTarget))) return true;
+        return false;
+      });
+      if (filtered.length) {
+        return filtered;
+      }
+    }
+
+    return allResults;
   }
 
   /**

@@ -5,8 +5,8 @@
    ========================================================================= */
 'use strict';
 
-const APP_VERSION = 'v1.5.1';
-const APP_BUILD = '7eccc40';
+const APP_VERSION = 'v1.5.2';
+const APP_BUILD = 'b5dcabb';
 
 /* ------------------------------ helpers ------------------------------ */
 const $ = (s, r = document) => r.querySelector(s);
@@ -260,7 +260,11 @@ async function refreshPrices({ silent = false } = {}) {
 /* ------------------------ filtering & sorting ------------------------ */
 function searchText(i) {
   const c = i.card;
-  return [c.name, c.setName, c.setCode, c.number, `${c.setCode} ${c.number}`, `${c.setCode} ${String(c.number).padStart(3, '0')}`,
+  const numRaw = String(c.number || '').trim();
+  const numClean = numRaw.replace(/^0+/, '') || '0';
+  const numPad = numRaw.padStart(3, '0');
+  return [c.name, c.setName, c.setCode, numRaw, numClean, numPad,
+    `${c.setCode} ${numRaw}`, `${c.setCode} ${numPad}`, `${c.name} ${numRaw}`, `${c.name} ${numPad}`, `${c.name} ${numClean}`,
     c.rarity, (c.types || []).join(' '), c.supertype, variantOf(i.variant).label, c.artist, i.shiny ? 'shiny' : '',
     c.lang === 'ja' ? 'japanese jp 日本語' : '', c.nameJa || '', c.setNameJa || '']
     .join(' ').toLowerCase();
@@ -1801,23 +1805,43 @@ function extractPokemonCardInfo(text) {
   if (!text) return null;
   const cleaned = text.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim();
 
-  // 1. Fraction card number: e.g. "069/187", "145/165", "25/102", "145 | 165", "145I165"
-  const fractionMatch = cleaned.match(/\b(?:([A-Za-z0-9]{2,5})\s+)?(\d{1,3})\s*[\/|I1l]\s*(\d{2,3})\b/);
+  // 1. Strict fraction card number: e.g. "029/165", "069/187", "029\165", "029|165", "029.165"
+  const fractionMatch = cleaned.match(/\b(?:([A-Z0-9]{2,5})\s+)?(\d{1,3})\s*([\/|\\]|\bI\b|\bl\b|\b1\b|\.)\s*(\d{2,3})\b/);
   if (fractionMatch) {
     const rawSet = fractionMatch[1] ? fractionMatch[1].trim() : '';
-    const validPrefix = /^(MEW|PAL|OBF|PAR|PAF|TEF|TWM|SSP|PRE|SCR|SVI|SV\d{1,2}|SWSH|SM|XY|TG|GG)$/i.test(rawSet)
+    const validPrefix = /^(MEW|PAL|OBF|PAR|PAF|TEF|TWM|SSP|PRE|SCR|SVI|SV\d{1,2}[a-z]?|SWSH|SM|XY|TG|GG)$/i.test(rawSet)
       ? rawSet.toUpperCase() + ' '
       : '';
-    return `${validPrefix}${fractionMatch[2]}/${fractionMatch[3]}`;
+    return `${validPrefix}${fractionMatch[2]}/${fractionMatch[4]}`;
   }
 
-  // 2. Promo / Special set code + number: e.g. "SVP 025", "SWSH025", "TG08", "GG25"
+  // 1b. Space separated numbers e.g. "029 165" or "069 187"
+  const spaceMatch = cleaned.match(/\b(?:([A-Z0-9]{2,5})\s+)?(\d{1,3})\s+(\d{2,3})\b/);
+  if (spaceMatch) {
+    const n1 = parseInt(spaceMatch[2], 10);
+    const n2 = parseInt(spaceMatch[3], 10);
+    if (n1 > 0 && n2 >= 20 && n2 <= 300 && n1 <= n2) {
+      const rawSet = spaceMatch[1] ? spaceMatch[1].trim() : '';
+      const validPrefix = /^(MEW|PAL|OBF|PAR|PAF|TEF|TWM|SSP|PRE|SCR|SVI|SV\d{1,2}[a-z]?|SWSH|SM|XY|TG|GG)$/i.test(rawSet)
+        ? rawSet.toUpperCase() + ' '
+        : '';
+      return `${validPrefix}${spaceMatch[2]}/${spaceMatch[3]}`;
+    }
+  }
+
+  // 2. Set code + number: e.g. "SVP 025", "SWSH025", "TG08", "GG25"
   const setCodeMatch = cleaned.match(/\b(SVP|SWSH|SM|XY|MEW|PAL|OBF|PAR|PAF|TEF|TWM|SSP|PRE|SCR|SVI|SV[0-9]{1,2}[a-z]?|TG|GG)\s*#?\s*(\d{1,3})\b/i);
   if (setCodeMatch) {
     return `${setCodeMatch[1].toUpperCase()} ${setCodeMatch[2].padStart(3, '0')}`;
   }
 
-  // 3. Known Pokemon card name in text (e.g. "Zapdos", "Pikachu", "Charizard")
+  // 3. 3-digit number alone (e.g. "029" or "069")
+  const numMatch = cleaned.match(/\b(0\d{2}|\d{3})\b/);
+  if (numMatch) {
+    return numMatch[1];
+  }
+
+  // 4. Known Pokemon card name in text (e.g. "Zapdos", "Pikachu", "Charizard")
   if (window.OFFLINE_CARDS) {
     const words = cleaned.split(/[^a-zA-Z0-9éÉ'-]+/).filter((w) => w.length >= 4);
     for (const w of words) {
@@ -1881,23 +1905,28 @@ function openScanner() {
         <h3 class="scanner-title"><span>📸</span> Pokédex Card Scanner</h3>
       </div>
 
+      <div class="scanner-mode-bar">
+        <button class="scanner-mode-tab on" id="scannerModeCode" type="button">🎯 Bottom Code (Zoomed)</button>
+        <button class="scanner-mode-tab" id="scannerModeFull" type="button">🃏 Full Card</button>
+      </div>
+
       <div class="scanner-viewfinder" id="scannerViewport">
         <video class="scanner-video" id="scannerVideo" autoplay playsinline muted></video>
         <img class="scanner-snapshot-preview hidden" id="scannerSnapshot" alt="" />
         <canvas class="scanner-canvas-hidden" id="scannerCanvas"></canvas>
 
-        <div class="scanner-reticle">
+        <div class="scanner-reticle mode-code" id="scannerReticle">
           <div class="scanner-corner tl"></div>
           <div class="scanner-corner tr"></div>
           <div class="scanner-corner bl"></div>
           <div class="scanner-corner br"></div>
-          <div class="scanner-number-target">🎯 Bottom number (e.g. 069/187)</div>
+          <div class="scanner-number-target" id="scannerReticleText">🎯 Aim at bottom-left code (e.g. 069/187)</div>
           <div class="scanner-laser"></div>
         </div>
       </div>
 
       <div class="scanner-status" id="scannerStatus">
-        Starting camera… 🎯 Align the full card inside the green frame!
+        Starting camera… 🎯 Hold close to the bottom-left corner of the card!
       </div>
 
       <div class="scanner-actions">
@@ -1909,7 +1938,7 @@ function openScanner() {
       <div class="scanner-manual-box">
         <label for="scannerManualInput" class="scanner-manual-label">Card number or name:</label>
         <div class="scanner-manual-row">
-          <input id="scannerManualInput" placeholder="e.g. 069/187 or Zapdos" />
+          <input id="scannerManualInput" placeholder="e.g. 069/187 or Zapdos 029" />
           <button class="btn btn-add" id="scannerManualBtn">Find</button>
         </div>
       </div>
@@ -1924,6 +1953,30 @@ function openScanner() {
   const status = $('#scannerStatus', m);
   const matchesEl = $('#scannerMatches', m);
   const manualInput = $('#scannerManualInput', m);
+  const reticle = $('#scannerReticle', m);
+  const reticleText = $('#scannerReticleText', m);
+  const tabCode = $('#scannerModeCode', m);
+  const tabFull = $('#scannerModeFull', m);
+
+  let scannerMode = 'code'; // 'code' or 'full'
+
+  const setScannerMode = (mode) => {
+    scannerMode = mode;
+    tabCode.classList.toggle('on', mode === 'code');
+    tabFull.classList.toggle('on', mode === 'full');
+    if (mode === 'code') {
+      reticle.className = 'scanner-reticle mode-code';
+      reticleText.textContent = '🎯 Aim at bottom-left code (e.g. 069/187)';
+      status.innerHTML = 'Camera ready! 🎯 <b>Hold close to the bottom-left of the card</b> (numbers in the box).';
+    } else {
+      reticle.className = 'scanner-reticle';
+      reticleText.textContent = '🎯 Bottom number (e.g. 069/187)';
+      status.innerHTML = 'Camera ready! 🎯 <b>Align the full card inside the green frame</b>.';
+    }
+  };
+
+  tabCode.onclick = () => setScannerMode('code');
+  tabFull.onclick = () => setScannerMode('full');
 
   // Try live camera stream
   if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
@@ -1935,7 +1988,7 @@ function openScanner() {
         video.srcObject = stream;
         video.play().catch(() => {});
       }
-      status.innerHTML = 'Camera ready! 🎯 <b>Align the full card inside the green frame</b> (bottom numbers in yellow zone).';
+      setScannerMode(scannerMode);
     }).catch((err) => {
       console.warn('Live camera stream not permitted or unavailable:', err);
       status.innerHTML = 'Live camera stream not available. Tap <b>⚡ Scan / Snap Picture</b> or enter code below!';
@@ -2015,23 +2068,38 @@ function openScanner() {
         status.innerHTML = 'Reading card with OCR… 🔍';
         const worker = await preloadTesseract();
         if (worker) {
-          // Pass A: Bottom target zone (where set numbers live on a framed card: 10%-90% X, 68%-98% Y)
-          const bottomCrop = prepareOcrCanvas(canvas, 0.10, 0.68, 0.80, 0.30);
-          const resBottom = await worker.recognize(bottomCrop);
-          detectedQuery = extractPokemonCardInfo(resBottom?.data?.text);
+          if (scannerMode === 'code') {
+            // Pass A: Center zoomed code box (8%-92% X, 22%-78% Y)
+            const codeCrop = prepareOcrCanvas(canvas, 0.08, 0.22, 0.84, 0.56);
+            const resCode = await worker.recognize(codeCrop);
+            detectedQuery = extractPokemonCardInfo(resCode?.data?.text);
 
-          // Pass B: Full image (in case user zoomed in directly on just the bottom code or set number)
-          if (!detectedQuery) {
-            const fullCrop = prepareOcrCanvas(canvas, 0, 0, 1, 1);
-            const resFull = await worker.recognize(fullCrop);
-            detectedQuery = extractPokemonCardInfo(resFull?.data?.text);
-          }
+            // Pass B: Full frame
+            if (!detectedQuery) {
+              const fullCrop = prepareOcrCanvas(canvas, 0, 0, 1, 1);
+              const resFull = await worker.recognize(fullCrop);
+              detectedQuery = extractPokemonCardInfo(resFull?.data?.text);
+            }
+          } else {
+            // Full card mode
+            // Pass A: Bottom target zone (10%-90% X, 68%-98% Y)
+            const bottomCrop = prepareOcrCanvas(canvas, 0.10, 0.68, 0.80, 0.30);
+            const resBottom = await worker.recognize(bottomCrop);
+            detectedQuery = extractPokemonCardInfo(resBottom?.data?.text);
 
-          // Pass C: Top card name zone (where "Zapdos" lives: 10%-90% X, 0%-25% Y)
-          if (!detectedQuery) {
-            const topCrop = prepareOcrCanvas(canvas, 0.10, 0.02, 0.80, 0.25);
-            const resTop = await worker.recognize(topCrop);
-            detectedQuery = extractPokemonCardInfo(resTop?.data?.text);
+            // Pass B: Full image
+            if (!detectedQuery) {
+              const fullCrop = prepareOcrCanvas(canvas, 0, 0, 1, 1);
+              const resFull = await worker.recognize(fullCrop);
+              detectedQuery = extractPokemonCardInfo(resFull?.data?.text);
+            }
+
+            // Pass C: Top card name zone
+            if (!detectedQuery) {
+              const topCrop = prepareOcrCanvas(canvas, 0.10, 0.02, 0.80, 0.25);
+              const resTop = await worker.recognize(topCrop);
+              detectedQuery = extractPokemonCardInfo(resTop?.data?.text);
+            }
           }
         }
       } catch (ocrErr) {
@@ -2041,6 +2109,11 @@ function openScanner() {
 
     // If we extracted a card code or name: automatically enter it and search!
     if (detectedQuery) {
+      // If detected is just digits (e.g. "029") and input already had a name (e.g. "Zapdos"), combine them!
+      const currentVal = manualInput.value.trim();
+      if (/^\d{1,4}$/.test(detectedQuery) && currentVal && !/^\d+$/.test(currentVal)) {
+        detectedQuery = `${currentVal} ${detectedQuery}`;
+      }
       manualInput.value = detectedQuery;
       status.innerHTML = `Found “<b>${esc(detectedQuery)}</b>”! Searching catalogue…`;
       await searchDetected(detectedQuery);
@@ -2062,7 +2135,7 @@ function openScanner() {
       snap.classList.add('hidden');
       video.classList.remove('hidden');
       $('#scannerSnapBtn', m).innerHTML = '<span>⚡</span> Scan / Snap Picture';
-      status.innerHTML = 'Camera ready! 🎯 <b>Align the full card inside the green frame</b>.';
+      setScannerMode(scannerMode);
       matchesEl.innerHTML = '';
       return;
     }

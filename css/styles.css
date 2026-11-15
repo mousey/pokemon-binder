@@ -1775,6 +1775,33 @@ main { padding: 14px 28px 60px; }
   display: block;
 }
 
+.scanner-mode-bar {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.scanner-mode-tab {
+  background: #f1f5f9;
+  border: 2px solid #cbd5e1;
+  color: #475569;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 0.85rem;
+  padding: 6px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.scanner-mode-tab.on {
+  background: #3b4cca;
+  border-color: #3b4cca;
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(59, 76, 202, 0.35);
+}
+
 /* Aiming reticle & laser */
 .scanner-reticle {
   position: absolute;
@@ -1786,6 +1813,36 @@ main { padding: 14px 28px 60px; }
   border-radius: 12px;
   pointer-events: none;
   box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45);
+  transition: all 0.2s ease;
+}
+
+/* Mode: Zoomed in on bottom code */
+.scanner-reticle.mode-code {
+  height: 52%;
+  width: 84%;
+  max-width: 330px;
+  aspect-ratio: auto;
+  border: 2px dashed #facc15;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.52);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.scanner-reticle.mode-code .scanner-corner {
+  border-color: #facc15;
+}
+
+.scanner-reticle.mode-code .scanner-number-target {
+  position: static;
+  height: auto;
+  border: none;
+  background: none;
+  font-size: 0.76rem;
+  color: #fef08a;
+  text-align: center;
+  white-space: normal;
+  padding: 0 8px;
 }
 
 .scanner-corner {
