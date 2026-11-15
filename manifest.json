@@ -1,0 +1,17 @@
+{
+  "name": "My Pokémon Binder & Pokédex",
+  "short_name": "PokéBinder",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#dc0a2d",
+  "theme_color": "#dc0a2d",
+  "description": "Catalogue, track value, scan, and trade Pokémon cards.",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='46' fill='%23fff' stroke='%23222' stroke-width='8'/><path d='M4 50a46 46 0 0 1 92 0z' fill='%23e3350d' stroke='%23222' stroke-width='8'/><circle cx='50' cy='50' r='13' fill='%23fff' stroke='%23222' stroke-width='8'/></svg>",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

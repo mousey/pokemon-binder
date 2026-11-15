@@ -1,0 +1,16 @@
+# Operating system files
+.DS_Store
+Thumbs.db
+*.swp
+
+# Personal collection backups (kept strictly on your local computer)
+backups/
+*.json
+!manifest.json
+
+# Environment and sensitive keys
+.env
+.env.*
+
+# Logs
+*.log

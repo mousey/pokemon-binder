@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Pokémon Binder</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <meta name="theme-color" content="#dc0a2d" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="PokéBinder" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='46' fill='%23fff' stroke='%23222' stroke-width='8'/><path d='M4 50a46 46 0 0 1 92 0z' fill='%23e3350d' stroke='%23222' stroke-width='8'/><circle cx='50' cy='50' r='13' fill='%23fff' stroke='%23222' stroke-width='8'/></svg>" />
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='46' fill='%23fff' stroke='%23222' stroke-width='8'/><path d='M4 50a46 46 0 0 1 92 0z' fill='%23e3350d' stroke='%23222' stroke-width='8'/><circle cx='50' cy='50' r='13' fill='%23fff' stroke='%23222' stroke-width='8'/></svg>" />
+</head>
+<body>
+  <!-- ===== Header / dashboard ===== -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="pokeball-logo" aria-hidden="true"></div>
+      <div>
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <h1 id="trainerTitle" contenteditable="true" spellcheck="false" title="Click to change your name!">My Pokémon Binder</h1>
+          <button class="sync-badge sync-off" id="syncStatusBadge" title="Click to configure Cloud Sync in Settings">☁️ Cloud Sync Off</button>
+        </div>
+        <div class="subtitle">Gotta catalogue 'em all!</div>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-num" id="statCards">0</div>
+        <div class="stat-label">Cards</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num" id="statUnique">0</div>
+        <div class="stat-label">Different</div>
+      </div>
+      <button class="stat stat-value" id="statValueBtn" title="See how your collection value has changed">
+        <div class="stat-num" id="statValue">£0.00</div>
+        <div class="stat-label">Collection value <span id="statTrend"></span></div>
+      </button>
+    </div>
+
+    <div class="top-actions">
+      <button class="btn btn-big btn-scan" id="scanBtn"><span>📸</span> Scan</button>
+      <button class="btn btn-big btn-trade" id="tradeBtn"><span>🤝</span> Trade</button>
+      <button class="btn btn-big btn-add" id="addBtn"><span>＋</span> Add Card</button>
+      <button class="btn btn-icon" id="refreshBtn" title="Update prices">🔄</button>
+      <button class="btn btn-icon" id="settingsBtn" title="Settings">⚙️</button>
+    </div>
+  </header>
+
+  <!-- ===== Toolbar ===== -->
+  <section class="toolbar">
+    <div class="search-wrap">
+      <span class="search-ico">🔍</span>
+      <input id="searchInput" type="search" placeholder="Search my cards… (name, set, number, rarity)" />
+    </div>
+
+    <label class="select-wrap">
+      <span>Organise by</span>
+      <select id="sortSelect">
+        <option value="set">📚 Set &amp; number</option>
+        <option value="dex">🔢 Pokédex number</option>
+        <option value="type">🔥 Type</option>
+        <option value="gen">🌍 Generation</option>
+        <option value="name">🔤 Name A–Z</option>
+        <option value="value">💰 Value (highest first)</option>
+        <option value="added">🆕 Recently added</option>
+      </select>
+    </label>
+
+    <div class="view-toggle" role="tablist">
+      <button class="vt-btn active" data-view="binder">📖 Binder</button>
+      <button class="vt-btn" data-view="grid">🗂️ Grid</button>
+      <button class="vt-btn" data-view="pokedex" id="pokedexViewBtn">🔴 Pokédex</button>
+    </div>
+  </section>
+
+  <section class="filters">
+    <div class="chip-row" id="typeChips"></div>
+    <div class="chip-row" id="genChips"></div>
+    <div class="chip-row" id="variantChips"></div>
+  </section>
+
+  <!-- ===== Main content ===== -->
+  <main id="main">
+    <div id="emptyState" class="empty hidden">
+      <div class="empty-ball"></div>
+      <h2>Your binder is empty!</h2>
+      <p>Tap <b>＋ Add Card</b> or <b>📸 Scan</b> to put your first Pokémon card in.</p>
+      <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+        <button class="btn btn-big btn-add" id="emptyAddBtn"><span>＋</span> Add my first card</button>
+        <button class="btn btn-big btn-scan" id="emptyScanBtn"><span>📸</span> Scan with camera</button>
+      </div>
+    </div>
+
+    <div id="noResults" class="empty hidden">
+      <h2>No cards match 🤔</h2>
+      <p>Try a different search or clear the filters.</p>
+      <button class="btn" id="clearFiltersBtn">Clear filters</button>
+    </div>
+
+    <!-- Binder view -->
+    <div id="binderView" class="binder-view">
+      <div class="binder">
+        <button class="binder-nav prev" id="pagePrev" aria-label="Previous page">‹</button>
+        <div class="binder-spread" id="binderSpread"></div>
+        <button class="binder-nav next" id="pageNext" aria-label="Next page">›</button>
+      </div>
+      <div class="binder-footer">
+        <span id="pageIndicator">Page 1</span>
+        <input type="range" id="pageSlider" min="0" max="0" value="0" />
+      </div>
+    </div>
+
+    <!-- Grid view -->
+    <div id="gridView" class="grid-view hidden"></div>
+
+    <!-- Pokédex Handheld View (Dedicated Phone Format) -->
+    <div id="pokedexView" class="pokedex-view hidden"></div>
+  </main>
+
+  <!-- ===== Modal container ===== -->
+  <div id="modalRoot" class="modal-root hidden">
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal" id="modal" role="dialog" aria-modal="true"></div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+  <div id="confetti"></div>
+
+  <input type="file" id="importFile" accept="application/json" hidden />
+  <input type="file" id="cameraInput" accept="image/*" capture="environment" hidden />
+
+  <script src="js/card-index.js"></script>
+  <script src="js/card-index-ja.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/chart.js"></script>
+  <script src="js/qrcode.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
