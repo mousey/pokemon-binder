@@ -1803,8 +1803,8 @@ function openScanner() {
       </div>
 
       <div class="scanner-actions">
-        <button class="btn btn-big btn-scan" id="scannerSnapBtn"><span>⚡</span> Scan / Snap Picture</button>
-        <button class="btn btn-big btn-ghost" id="scannerNativeBtn"><span>📁</span> Take Photo / Upload</button>
+        <button class="btn btn-big btn-scan" id="scannerSnapBtn" style="width:100%; max-width:320px;"><span>⚡</span> Scan / Snap Picture</button>
+        <button class="btn btn-big btn-ghost" id="scannerNativeBtn" style="display:none;"><span>📁</span> Take Photo / Upload</button>
       </div>
 
       <!-- Quick manual fallback helper -->
@@ -1840,11 +1840,11 @@ function openScanner() {
       status.innerHTML = 'Camera ready! 🎯 <b>Align the card in the frame</b>, especially the bottom number.';
     }).catch((err) => {
       console.warn('Live camera stream not permitted or unavailable:', err);
-      status.innerHTML = 'Live camera stream not available. Tap <b>📁 Take Photo / Upload</b> below to snap a picture!';
+      status.innerHTML = 'Live camera stream not available. Tap <b>⚡ Scan / Snap Picture</b> or enter code below!';
       video?.classList.add('hidden');
     });
   } else {
-    status.innerHTML = 'Tap <b>📁 Take Photo / Upload</b> to take a picture of your card!';
+    status.innerHTML = 'Tap <b>⚡ Scan / Snap Picture</b> to capture your card!';
     video?.classList.add('hidden');
   }
 
