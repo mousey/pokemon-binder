@@ -6,7 +6,7 @@
 'use strict';
 
 const APP_VERSION = 'v1.5.2';
-const APP_BUILD = 'b5dcabb';
+const APP_BUILD = '4c51ed9';
 
 /* ------------------------------ helpers ------------------------------ */
 const $ = (s, r = document) => r.querySelector(s);
