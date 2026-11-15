@@ -5,6 +5,9 @@
    ========================================================================= */
 'use strict';
 
+const APP_VERSION = 'v1.5.1';
+const APP_BUILD = '311f7cd';
+
 /* ------------------------------ helpers ------------------------------ */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -2554,6 +2557,14 @@ function openSettings() {
       <p class="small credits">Card data &amp; images: <a href="https://pokemontcg.io" target="_blank" rel="noopener">Pokémon TCG API</a> and
         <a href="https://tcgdex.dev" target="_blank" rel="noopener">TCGdex</a>. Prices from TCGplayer &amp; Cardmarket. Exchange rates: Frankfurter.
         Pokémon and its trademarks are © Nintendo, Creatures, GAME FREAK and The Pokémon Company. Not affiliated.</p>
+
+      <div class="settings-version-tag" style="text-align:center; margin-top:16px; padding-top:12px; border-top:1px dashed #cbd5e1; font-size:0.8rem; color:#64748b;">
+        <div><b>My Pokémon Binder</b> <span style="background:#e2e8f0; color:#334155; padding:2px 7px; border-radius:6px; font-weight:700; font-size:0.75rem;">${APP_VERSION}</span></div>
+        <div style="margin-top:5px; font-size:0.75rem; color:#94a3b8;">
+          Commit: <code style="background:#f1f5f9; padding:2px 6px; border-radius:4px; font-family:monospace; color:#475569;">${APP_BUILD}</code>
+          · <button id="forceReloadBtn" type="button" style="background:none; border:none; color:var(--blue); font-size:0.75rem; text-decoration:underline; cursor:pointer; padding:0;">🔄 Reload latest version</button>
+        </div>
+      </div>
     </div>`, 'modal-small');
 
   $('#curSel', m).onchange = (e) => { state.currency = e.target.value; save(); render(); };
@@ -2561,6 +2572,7 @@ function openSettings() {
   $('#exportBtn', m).onclick = exportData;
   $('#importBtn', m).onclick = () => $('#importFile').click();
   $('#settingsQrBtn', m).onclick = openQrSyncModal;
+  $('#forceReloadBtn', m).onclick = () => window.location.reload(true);
   $('#wipeBtn', m).onclick = () => {
     if (confirm('Delete EVERY card in your binder? This cannot be undone.') && confirm('Are you really sure? Maybe download a backup first!')) {
       state.items = []; state.valueHistory = []; save(); closeModal(); render(); toast('Collection cleared');
