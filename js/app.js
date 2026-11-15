@@ -1774,9 +1774,104 @@ function showAdded(item, qty) {
   $('#doneAdding', m).onclick = () => { ui.flashUid = item.uid; closeModal(); render(); };
 }
 
+/* ---------------------------- OCR & scanner helpers ------------------ */
+let tesseractWorkerPromise = null;
+function preloadTesseract() {
+  if (tesseractWorkerPromise) return tesseractWorkerPromise;
+  if (typeof Tesseract !== 'undefined') {
+    tesseractWorkerPromise = (async () => {
+      try {
+        const worker = await Tesseract.createWorker('eng', 1, {
+          logger: () => {},
+        });
+        return worker;
+      } catch (e) {
+        console.warn('Tesseract worker init error:', e);
+        return null;
+      }
+    })();
+  }
+  return tesseractWorkerPromise;
+}
+
+function extractPokemonCardInfo(text) {
+  if (!text) return null;
+  const cleaned = text.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim();
+
+  // 1. Fraction card number: e.g. "069/187", "145/165", "25/102", "145 | 165", "145I165"
+  const fractionMatch = cleaned.match(/\b(?:([A-Za-z0-9]{2,5})\s+)?(\d{1,3})\s*[\/|I1l]\s*(\d{2,3})\b/);
+  if (fractionMatch) {
+    const rawSet = fractionMatch[1] ? fractionMatch[1].trim() : '';
+    const validPrefix = /^(MEW|PAL|OBF|PAR|PAF|TEF|TWM|SSP|PRE|SCR|SVI|SV\d{1,2}|SWSH|SM|XY|TG|GG)$/i.test(rawSet)
+      ? rawSet.toUpperCase() + ' '
+      : '';
+    return `${validPrefix}${fractionMatch[2]}/${fractionMatch[3]}`;
+  }
+
+  // 2. Promo / Special set code + number: e.g. "SVP 025", "SWSH025", "TG08", "GG25"
+  const setCodeMatch = cleaned.match(/\b(SVP|SWSH|SM|XY|MEW|PAL|OBF|PAR|PAF|TEF|TWM|SSP|PRE|SCR|SVI|SV[0-9]{1,2}[a-z]?|TG|GG)\s*#?\s*(\d{1,3})\b/i);
+  if (setCodeMatch) {
+    return `${setCodeMatch[1].toUpperCase()} ${setCodeMatch[2].padStart(3, '0')}`;
+  }
+
+  // 3. Known Pokemon card name in text (e.g. "Zapdos", "Pikachu", "Charizard")
+  if (window.OFFLINE_CARDS) {
+    const words = cleaned.split(/[^a-zA-Z0-9éÉ'-]+/).filter((w) => w.length >= 4);
+    for (const w of words) {
+      const lower = w.toLowerCase();
+      for (const cName of Object.values(window.OFFLINE_CARDS)) {
+        if (cName.toLowerCase() === lower || cName.toLowerCase().startsWith(lower + ' ')) {
+          return cName;
+        }
+      }
+    }
+  }
+
+  return null;
+}
+
+function prepareOcrCanvas(srcCanvas, xRatio = 0, yRatio = 0, wRatio = 1, hRatio = 1) {
+  const sx = Math.floor(srcCanvas.width * xRatio);
+  const sy = Math.floor(srcCanvas.height * yRatio);
+  const sw = Math.floor(srcCanvas.width * wRatio);
+  const sh = Math.floor(srcCanvas.height * hRatio);
+
+  const dest = document.createElement('canvas');
+  const targetW = Math.min(800, Math.max(10, sw));
+  const scale = targetW / Math.max(1, sw);
+  dest.width = targetW;
+  dest.height = Math.round(sh * scale);
+
+  const ctx = dest.getContext('2d');
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(srcCanvas, sx, sy, sw, sh, 0, 0, dest.width, dest.height);
+
+  try {
+    const imgData = ctx.getImageData(0, 0, dest.width, dest.height);
+    const d = imgData.data;
+    for (let i = 0; i < d.length; i += 4) {
+      const gray = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+      const contrast = 1.35;
+      const factor = (259 * (contrast + 255)) / (255 * (259 - contrast));
+      const val = factor * (gray - 128) + 128;
+      const clamped = Math.min(255, Math.max(0, val));
+      d[i] = clamped;
+      d[i + 1] = clamped;
+      d[i + 2] = clamped;
+    }
+    ctx.putImageData(imgData, 0, 0);
+  } catch (e) {
+    console.warn('Canvas filter error', e);
+  }
+
+  return dest;
+}
+
 /* ---------------------------- camera scanner ------------------------- */
 function openScanner() {
   stopActiveStream();
+  preloadTesseract();
   const m = openModal(`
     <div class="scanner-modal">
       <div class="scanner-title-bar">
@@ -1892,31 +1987,65 @@ function openScanner() {
 
   const processCanvas = async () => {
     status.innerHTML = 'Analyzing card and reading text… 🔍';
-    let detectedQueries = [];
+    let detectedQuery = null;
 
-    // 1. Try window.TextDetector (Shape Detection API supported in modern browsers / Android Chrome)
+    // 1. Try window.TextDetector (Shape Detection API supported on some Chromium browsers)
     if ('TextDetector' in window) {
       try {
         const detector = new window.TextDetector();
         const texts = await detector.detect(canvas);
         for (const t of texts) {
-          const val = (t.rawValue || '').trim();
-          const numMatch = val.match(/([a-zA-Z0-9]{2,5}\s+)?(\d{1,3})\s*[\/|I1]\s*(\d{2,3})/);
-          if (numMatch) detectedQueries.push(numMatch[0]);
-          if (/^[a-zA-Z0-9]{2,5}\s+\d{1,3}$/.test(val)) detectedQueries.push(val);
+          const match = extractPokemonCardInfo(t.rawValue || '');
+          if (match) {
+            detectedQuery = match;
+            break;
+          }
         }
       } catch (err) {
         console.warn('TextDetector failed:', err);
       }
     }
 
-    if (detectedQueries.length) {
-      await searchDetected(detectedQueries[0]);
+    // 2. Try Tesseract OCR (cross-platform, works on iOS Safari, Android, desktop)
+    if (!detectedQuery && typeof Tesseract !== 'undefined') {
+      try {
+        status.innerHTML = 'Reading card with OCR… 🔍';
+        const worker = await preloadTesseract();
+        if (worker) {
+          // Pass A: Bottom target zone (where set numbers live on a framed card: 10%-90% X, 68%-98% Y)
+          const bottomCrop = prepareOcrCanvas(canvas, 0.10, 0.68, 0.80, 0.30);
+          const resBottom = await worker.recognize(bottomCrop);
+          detectedQuery = extractPokemonCardInfo(resBottom?.data?.text);
+
+          // Pass B: Full image (in case user zoomed in directly on just the bottom code or set number)
+          if (!detectedQuery) {
+            const fullCrop = prepareOcrCanvas(canvas, 0, 0, 1, 1);
+            const resFull = await worker.recognize(fullCrop);
+            detectedQuery = extractPokemonCardInfo(resFull?.data?.text);
+          }
+
+          // Pass C: Top card name zone (where "Zapdos" lives: 10%-90% X, 0%-25% Y)
+          if (!detectedQuery) {
+            const topCrop = prepareOcrCanvas(canvas, 0.10, 0.02, 0.80, 0.25);
+            const resTop = await worker.recognize(topCrop);
+            detectedQuery = extractPokemonCardInfo(resTop?.data?.text);
+          }
+        }
+      } catch (ocrErr) {
+        console.warn('Tesseract OCR error:', ocrErr);
+      }
+    }
+
+    // If we extracted a card code or name: automatically enter it and search!
+    if (detectedQuery) {
+      manualInput.value = detectedQuery;
+      status.innerHTML = `Found “<b>${esc(detectedQuery)}</b>”! Searching catalogue…`;
+      await searchDetected(detectedQuery);
       return;
     }
 
-    // Fallback: If OCR API didn't report text, allow instant confirm
-    status.innerHTML = `Card photo captured! 📷 Check the card name or bottom number and confirm below:`;
+    // Fallback: If OCR could not read the text clearly, prompt user to confirm or retake
+    status.innerHTML = `Card photo captured! 📷 Check card number or name below and tap Find:`;
     if (manualInput.value.trim()) {
       await searchDetected(manualInput.value.trim());
     } else {
