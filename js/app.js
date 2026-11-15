@@ -1808,10 +1808,12 @@ function openScanner() {
       </div>
 
       <!-- Quick manual fallback helper -->
-      <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:8px 12px; display:flex; gap:8px; align-items:center;">
-        <span style="font-size:0.88rem; color:var(--muted); flex-shrink:0;">Or enter card code:</span>
-        <input id="scannerManualInput" placeholder="e.g. 069/187 or MEW 025" style="flex:1; padding:8px 12px; border-radius:8px; border:2px solid #cbd5e1; font-weight:600; outline:none;" />
-        <button class="btn btn-add" id="scannerManualBtn" style="padding:8px 14px;">Find</button>
+      <div class="scanner-manual-box">
+        <label for="scannerManualInput" class="scanner-manual-label">Or enter card code:</label>
+        <div class="scanner-manual-row">
+          <input id="scannerManualInput" placeholder="e.g. 069/187 or MEW 025" />
+          <button class="btn btn-add" id="scannerManualBtn">Find</button>
+        </div>
       </div>
 
       <div class="scanner-matches" id="scannerMatches"></div>
