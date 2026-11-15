@@ -5,8 +5,8 @@
    ========================================================================= */
 'use strict';
 
-const APP_VERSION = 'v1.5.3';
-const APP_BUILD = '8b88ebe';
+const APP_VERSION = 'v1.5.4';
+const APP_BUILD = '0a97d62';
 
 /* ------------------------------ helpers ------------------------------ */
 const $ = (s, r = document) => r.querySelector(s);
@@ -29,7 +29,9 @@ function cardImg(c, large = false) {
     return direct;
   }
   if (window.isEnergyCard && window.isEnergyCard(c)) {
-    return window.makeEnergyCardSvg(c.name, c.number, c.setCode || c.setId, c.printedTotal);
+    const scan = window.getEnergyScan ? window.getEnergyScan(c.setCode || c.setId, c.number) : null;
+    if (scan) return large ? scan.high : scan.low;
+    return window.makeEnergyCardSvg ? window.makeEnergyCardSvg(c.name, c.number, c.setCode || c.setId, c.printedTotal) : CARD_BACK;
   }
   return direct || CARD_BACK;
 }
@@ -37,7 +39,7 @@ function cardImg(c, large = false) {
 window.handleImgError = function(el, name, number, setCode, printedTotal, supertype) {
   el.onerror = null;
   if (window.isEnergyCard && window.isEnergyCard({ name, number, setCode, printedTotal, supertype })) {
-    el.src = window.makeEnergyCardSvg(name, number, setCode, printedTotal);
+    el.src = window.makeEnergyCardSvg ? window.makeEnergyCardSvg(name, number, setCode, printedTotal) : CARD_BACK;
   } else {
     el.src = CARD_BACK;
   }
@@ -49,17 +51,23 @@ function imgErr(c) {
 }
 
 function repairEnergyCards(items) {
-  if (!Array.isArray(items) || !window.makeEnergyCardSvg) return;
+  if (!Array.isArray(items)) return;
   items.forEach((item) => {
     const c = item.card;
     if (!c) return;
     const isEnergy = window.isEnergyCard ? window.isEnergyCard(c) : (/\benergy\b/i.test(c.name || '') || /^(sve|mee)$/i.test(c.setId || c.setCode || ''));
     if (isEnergy) {
-      const needsFix = !c.imgSmall || c.imgSmall.includes('assets.tcgdex.net/en/sve') || c.imgSmall.includes('assets.tcgdex.net/en/mee') || c.imgSmall === CARD_BACK;
-      if (needsFix) {
-        const svg = window.makeEnergyCardSvg(c.name, c.number, c.setCode || c.setId, c.printedTotal);
-        c.imgSmall = svg;
-        c.imgLarge = svg;
+      const scan = window.getEnergyScan ? window.getEnergyScan(c.setCode || c.setId, c.number) : null;
+      if (scan) {
+        c.imgSmall = scan.low;
+        c.imgLarge = scan.high;
+      } else if (window.makeEnergyCardSvg) {
+        const needsFix = !c.imgSmall || c.imgSmall.includes('assets.tcgdex.net/en/sve') || c.imgSmall.includes('assets.tcgdex.net/en/mee') || c.imgSmall === CARD_BACK;
+        if (needsFix) {
+          const svg = window.makeEnergyCardSvg(c.name, c.number, c.setCode || c.setId, c.printedTotal);
+          c.imgSmall = svg;
+          c.imgLarge = svg;
+        }
       }
     }
   });

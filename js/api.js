@@ -163,6 +163,20 @@ const API = (() => {
   }
 
   /* ---------------------------- energy fallback ---------------------------- */
+  const ENERGY_SCANS = {"mee":{"001":["https://static.tcgcollector.com/content/images/7c/05/01/7c05017127134ededb8fbc4132bcab6bc11d34b97fbabcccf92293244c7adaf3.webp","https://static.tcgcollector.com/content/images/92/d4/43/92d443706f0fb935aaca668b76b54bfd48358a4c19e9764e7a6e4ed6fc3d0fd5.webp"],"002":["https://static.tcgcollector.com/content/images/9a/66/c2/9a66c2f3a14e1a791c6377b33c82a2f07f924f71e4fd31c1cdf5e374e211d5b3.webp","https://static.tcgcollector.com/content/images/06/8a/f1/068af1f1a5d451c8739654f87be50ab3aca8a7ed19aa70d3e7b4fbaa313e7fd5.webp"],"003":["https://static.tcgcollector.com/content/images/cd/71/4b/cd714beb09c34094807e400b1e27d86965c750189d6e1c88d085633841c3b184.webp","https://static.tcgcollector.com/content/images/59/42/da/5942da9431f6cfe2677b6e5808516bc29f1457667579be090d05331f8f0437f3.webp"],"004":["https://static.tcgcollector.com/content/images/c7/64/d3/c764d3561f43b5127e035c195594876e1a3185f2bb356e2cfbdd5f696fe1948b.webp","https://static.tcgcollector.com/content/images/e7/d1/a3/e7d1a348ad4838e401676a67aef2e1c1b22ecb745e73ee431327ca684bc2034a.webp"],"005":["https://static.tcgcollector.com/content/images/e8/70/f6/e870f629e2d76ed8e6ba5d1a2a8fd967adb0903287b0b4dc5711d016de376fef.webp","https://static.tcgcollector.com/content/images/3f/d8/04/3fd8046338d81b06402746680ca825bfe11076139d5fc2b061b8c6c44569eddf.webp"],"006":["https://static.tcgcollector.com/content/images/41/88/6e/41886eb712cd6440c65e75d36c257f943551d8c4fefbc9bf5491d9d5f1830406.webp","https://static.tcgcollector.com/content/images/4f/31/26/4f312611f148f5fb2048760557d9b7a36448c44097d36bd7d5c6d96a1b1598e6.webp"],"007":["https://static.tcgcollector.com/content/images/24/9b/2f/249b2ff359e21259b5f81f28af591a128a677f5ac4985e807419af539d0ade02.webp","https://static.tcgcollector.com/content/images/21/de/ca/21deca2afe19a71a31c708a5d0093a3f2f2d9fd4a5c549f8f3198d4478ef8777.webp"],"008":["https://static.tcgcollector.com/content/images/d9/be/68/d9be6863a69a9100532c21eb03eeb8b81633f6e6f0e57f93fecd45b7db57f14f.webp","https://static.tcgcollector.com/content/images/b1/5c/73/b15c73fcceedaa5def237568acdc311d03cb1ea362a4c6c3e920ae9eba37b0ae.webp"],"009":["https://static.tcgcollector.com/content/images/aa/15/52/aa1552fb9906e2f626d2fc7f616c0f9c4939c7d629ee72966386657925b561e6.webp","https://static.tcgcollector.com/content/images/ed/54/f3/ed54f3d62c658657fc1f333f54313a714bdae70f9c85152546e77b3459284476.webp"],"010":["https://static.tcgcollector.com/content/images/67/0b/50/670b5023c887166e5bd6ff1dfa956fa147309e16841d5f99a8fd3d892b93bba8.webp","https://static.tcgcollector.com/content/images/73/56/91/73569163c9a790a0fb9d921dceae235645ffc0d9559fe2eae386598acad1dc89.webp"],"011":["https://static.tcgcollector.com/content/images/5c/d7/ef/5cd7ef0360d6b5799f18e73d037ac62f1a6b6b8a1ff9568080a42e95dcddb2ce.webp","https://static.tcgcollector.com/content/images/6c/b4/f5/6cb4f56e88be29a163dd43525f83029563b7bb2ed9ee88f237e27fda3dbd5b1f.webp"],"012":["https://static.tcgcollector.com/content/images/f8/f4/b9/f8f4b94e001ba506c86b1957d3d9e04e7626d45314548af2eabf5b78806d10e5.webp","https://static.tcgcollector.com/content/images/fd/bf/0a/fdbf0a2e182f46ec4eea5dff02543882cc1b9b85930c2a23b9fb33bbb6262d18.webp"],"013":["https://static.tcgcollector.com/content/images/bf/da/bf/bfdabf62462e399d2bb94ae6710bd42481c4f1c7f37ae17eea08d08a2be70e36.webp","https://static.tcgcollector.com/content/images/df/67/33/df67334c0ffd6f560d76da00ff2aca5a90b7c62b687773c24efa7c50e3e9e5cc.webp"],"014":["https://static.tcgcollector.com/content/images/c5/eb/02/c5eb022fcd388a835897d9dad3c968756b64df7fbe1d8c391ad43b461053b976.webp","https://static.tcgcollector.com/content/images/66/8a/ad/668aadec7e9678e6e7a037377df33032c1066c1bde4fbf982524d358f3dabc2f.webp"],"015":["https://static.tcgcollector.com/content/images/14/b0/e5/14b0e5a55a398a54469e7cef66e5d3d6ff226c94424bac7d235e32f0b4986ee6.webp","https://static.tcgcollector.com/content/images/04/37/a0/0437a01012ed3ab8847ac20b4a27ae70ac73dfa10f711cd8170f137f4bcc4736.webp"],"016":["https://static.tcgcollector.com/content/images/44/5a/74/445a74f2fa7de814c2d6b7d9d282f1dbe016c9fd7772774976d1baf0667ffe0f.webp","https://static.tcgcollector.com/content/images/9c/f3/63/9cf36363d629829422ebeadd254035765560139dd67323d35f5628dd6a648ef0.webp"]},"sve":{"001":["https://static.tcgcollector.com/content/images/f5/5f/53/f55f53b19fe597a3043b2f5167739de3d450681793a1dbb93b39716124aae96c.jpg","https://static.tcgcollector.com/content/images/68/24/17/6824173d7bd59fff940ce9089cddac7a18b6c7a2015fd079cb86ac6e83978aab.jpg"],"002":["https://static.tcgcollector.com/content/images/b5/20/fb/b520fb71a54523418da65e18345fc0baebc23dae7230ee9575c2bffdeea6f930.jpg","https://static.tcgcollector.com/content/images/f7/79/40/f77940cf674f882178b3469550f71565fb6f9cc785fd9f087cfb514f7c1f97d2.jpg"],"003":["https://static.tcgcollector.com/content/images/a6/ac/f0/a6acf0adfdbd6a87982ba79e4143e826c5bbef47c235c6c9654ac1054f23c42e.jpg","https://static.tcgcollector.com/content/images/b9/f6/10/b9f610ec57bb72eac2ef6f427440fe9273fe2ac1ce322f8013d66110e3c9d52a.jpg"],"004":["https://static.tcgcollector.com/content/images/7d/9e/24/7d9e2459e8958cc2a8982d1c5e9cdf91512275040a625e2210c4d40cbb3889dd.jpg","https://static.tcgcollector.com/content/images/8a/6b/cf/8a6bcf3b18fcacfaa377261368856a26a7f8520d8230aa109e0ab725d76bcba2.jpg"],"005":["https://static.tcgcollector.com/content/images/12/ee/1b/12ee1b76e375e641b4a05645d40144da670c53b2ea5a19bc60b96368ea14fa32.jpg","https://static.tcgcollector.com/content/images/4e/c7/27/4ec72798ef8f2420312fcc4777f904763b7bde4e6deebc1ad467c454c79f29f7.jpg"],"006":["https://static.tcgcollector.com/content/images/0c/8b/5d/0c8b5df803e2db73bd83d13725251b3e868ee87e04a527b6265274bca7dbdb3c.jpg","https://static.tcgcollector.com/content/images/9e/37/1b/9e371bb954a8217065d52a272d062204b26687425bef956e2e4e604fbd233b46.jpg"],"007":["https://static.tcgcollector.com/content/images/e4/79/22/e47922d4083dc5431d14e13afb1b92b42bc28abf205e99b356efa6adb857b33a.jpg","https://static.tcgcollector.com/content/images/c1/48/72/c14872b28deb3ca7e41f8d969509bb7461e160fd1856aa24d4b9a3594523620f.jpg"],"008":["https://static.tcgcollector.com/content/images/5a/8a/ce/5a8acef5e77b8b0213524eb8f5aa4c7ee2bacb11b728beaf869fa35ca6e3ce98.jpg","https://static.tcgcollector.com/content/images/a0/eb/b7/a0ebb7ce70022af7f86f8b30acc7fc39957a4e10bd4899d804f366ffe540ae0b.jpg"],"009":["https://static.tcgcollector.com/content/images/aa/2d/ea/aa2dea500fb87050798eea37165ee225f49c1b673f3c8f5bd6f79b07a50a6bbe.jpg","https://static.tcgcollector.com/content/images/41/dd/7d/41dd7d4482239d36ce86df545f385c6047926a4311c4c6a2739cf4d89f77d740.jpg"],"010":["https://static.tcgcollector.com/content/images/ec/b8/ed/ecb8ed96c928c314d77c653d34c892d334c1eb2f0c055b84fcc5a949b679840b.jpg","https://static.tcgcollector.com/content/images/e2/44/aa/e244aa067a78d7e092d0d86d010932843589bdf3318022923bc3e29f2811984e.jpg"],"011":["https://static.tcgcollector.com/content/images/b0/83/16/b08316a9f2d51589b4a814b8299d4f4822cca725896eb8869f88731516a99af3.jpg","https://static.tcgcollector.com/content/images/b9/67/f9/b967f9a9e2e6dc882465cfbbd17ad9dfca320c395b3c8f673869c0ba5d1a67cf.jpg"],"012":["https://static.tcgcollector.com/content/images/c2/1d/37/c21d370dd588da834c3708954ad38e4da149ebae78338a0f104de5db6a190a5e.jpg","https://static.tcgcollector.com/content/images/27/df/e4/27dfe4eceb044b53fb6131327b51cbe2d82fe013d9f93014cbeafad96fddc3bb.jpg"],"013":["https://static.tcgcollector.com/content/images/1d/10/2b/1d102ba9c75b54b32cd75ff82d5ee320b9986d50c5566381afdb63d048fb42cf.jpg","https://static.tcgcollector.com/content/images/71/a5/51/71a551a82c411f8cd4a87dfbc7423071dd7f41ad51edc0090e736b36ce334c68.jpg"],"014":["https://static.tcgcollector.com/content/images/0e/eb/12/0eeb1258972d400ff71231883b1453af6df618e4df98e51d499232178301d08d.jpg","https://static.tcgcollector.com/content/images/d3/41/e2/d341e2bf8a5236a209346c8ab0c5608f2156ddc6d40c0eaccbe88668954adf76.jpg"],"015":["https://static.tcgcollector.com/content/images/57/bf/86/57bf86873793074af963f6b3034c74b9101a654ac1fd57a9aa6f4be5601fb44d.jpg","https://static.tcgcollector.com/content/images/ec/7b/c0/ec7bc0303b0dcdf906af86332ba6bbf6dd4366fa798d626cff06132177f76002.jpg"],"016":["https://static.tcgcollector.com/content/images/73/ba/b6/73bab62080ec1b44ad0776fa29d46a66d5b78c7b48e06f63bce8e65b9769ade9.jpg","https://static.tcgcollector.com/content/images/fc/97/03/fc97030221e9fe1cf10227a35433f7962e1327d13b4e8be2f10faac2fac9ce43.jpg"],"017":["https://static.tcgcollector.com/content/images/e8/95/aa/e895aa9ce34e8848cbe872de6131a938ea6cb82518944ec4f4eafb7b0eb64d0c.webp","https://static.tcgcollector.com/content/images/c3/31/3e/c3313e9bb12156caff47599b7d6790c33f031ea2c614645ba38d2a7d8fd76506.webp"],"018":["https://static.tcgcollector.com/content/images/4a/e1/35/4ae1352221b923fa98dbedc14b0dd82cc0c7336e256efc7be112d637d4d025c7.webp","https://static.tcgcollector.com/content/images/7b/4c/7d/7b4c7d49ac8cc2a4e6b7c9a171614831c77133bc5394c73d45136511d4aa6429.webp"],"019":["https://static.tcgcollector.com/content/images/35/94/3e/35943e5a7f9118dd9532af32f5c52fb218dc3e72fc89e661651f472941125178.webp","https://static.tcgcollector.com/content/images/91/77/fe/9177fe7cf3a99d91dfa7ad528dd4e61575e051280a64847167b4f4830c33e713.webp"],"020":["https://static.tcgcollector.com/content/images/4d/db/9d/4ddb9defc273b96c9e1281fff84272ad3d2b01c8f4d4915d3f4dc078b048e3b5.webp","https://static.tcgcollector.com/content/images/cd/32/e5/cd32e5df09429ae85cd28a237d0200a675cc4e14aceaf27bf67b34fcfb95785b.webp"],"021":["https://static.tcgcollector.com/content/images/f2/fd/87/f2fd87dd02c2f848846c50f84ddcab30d355836991cbc8ffcf9ae7acd17689a5.webp","https://static.tcgcollector.com/content/images/79/37/8b/79378b682852a285ba70ebec891649b50ef47fed2e3345e4783be246ead067a5.webp"],"022":["https://static.tcgcollector.com/content/images/dc/1c/e6/dc1ce60396e376ff70ee8dee477d150ce1cf368ee56626e341cd74068670f498.webp","https://static.tcgcollector.com/content/images/5b/03/98/5b039807b7f8ea37d461d7af1be7a13fdcab7c24d8f3f2301c1a86c2a062a7ae.webp"],"023":["https://static.tcgcollector.com/content/images/cd/c3/32/cdc332b283e54fe64ca463b5e22c46e709b9effb80c7e1c83b62e5e82ac8b58b.webp","https://static.tcgcollector.com/content/images/b7/ec/8d/b7ec8df123a801192d570c0a5f8f26437e156badadd88e0eb00b49713e3a3a67.webp"],"024":["https://static.tcgcollector.com/content/images/00/5c/86/005c864ac97adc69b1fe635c0405fdeed0160b987a42854e1c10e537fcc64860.webp","https://static.tcgcollector.com/content/images/38/b7/38/38b738a5efec5442c0f7f38bad286048ba6f2b404f3749d02493366087ae62c2.webp"]}};
+
+  function getEnergyScan(setId, num) {
+    const s = String(setId || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+    const n = String(num || "").replace(/D+/g, "").padStart(3, "0");
+    const setTable = ENERGY_SCANS[s];
+    if (setTable && setTable[n]) {
+      return { low: setTable[n][0], high: setTable[n][1] };
+    }
+    return null;
+  }
+
+  window.getEnergyScan = getEnergyScan;
+
   const ENERGY_CONFIG = {
     Grass:     { name: 'Grass Energy',     c1: '#0a3315', c2: '#1e6b2c', c3: '#48b056', icon: '🌿', symbol: 'GRASS' },
     Fire:      { name: 'Fire Energy',      c1: '#420f07', c2: '#ad2610', c3: '#f76828', icon: '🔥', symbol: 'FIRE' },
@@ -301,9 +315,15 @@ const API = (() => {
     let imgSmall = img ? img + '/low.webp' : '';
     let imgLarge = img ? img + '/high.webp' : '';
     if (!img && isEnergy) {
-      const fallbackSvg = makeEnergyCardSvg(c.name, c.localId, isJa ? s.id : (s.abbreviation?.official || s.id), s.cardCount?.official || s.cardCount?.total || jset?.official);
-      imgSmall = fallbackSvg;
-      imgLarge = fallbackSvg;
+      const scan = getEnergyScan(s.id, c.localId);
+      if (scan) {
+        imgSmall = scan.low;
+        imgLarge = scan.high;
+      } else {
+        const fallbackSvg = makeEnergyCardSvg(c.name, c.localId, isJa ? s.id : (s.abbreviation?.official || s.id), s.cardCount?.official || s.cardCount?.total || jset?.official);
+        imgSmall = fallbackSvg;
+        imgLarge = fallbackSvg;
+      }
     }
     const card = {
       id: isJa ? `ja:${c.id}` : c.id,
@@ -388,9 +408,15 @@ const API = (() => {
     let imgSmall = c.image ? c.image + '/low.webp' : '';
     let imgLarge = c.image ? c.image + '/high.webp' : '';
     if (!c.image && isEnergy) {
-      const fallbackSvg = makeEnergyCardSvg(c.name, c.localId, sId, c.set?.cardCount?.official || c.set?.cardCount?.total);
-      imgSmall = fallbackSvg;
-      imgLarge = fallbackSvg;
+      const scan = getEnergyScan(sId, c.localId);
+      if (scan) {
+        imgSmall = scan.low;
+        imgLarge = scan.high;
+      } else {
+        const fallbackSvg = makeEnergyCardSvg(c.name, c.localId, sId, c.set?.cardCount?.official || c.set?.cardCount?.total);
+        imgSmall = fallbackSvg;
+        imgLarge = fallbackSvg;
+      }
     }
     return {
       id: isJa ? `ja:${c.id}` : c.id,
@@ -420,9 +446,15 @@ const API = (() => {
     let imgSmall = `https://assets.tcgdex.net/en/${setId.replace(/\d.*$/, '')}/${setId}/${num}/low.webp`;
     let imgLarge = `https://assets.tcgdex.net/en/${setId.replace(/\d.*$/, '')}/${setId}/${num}/high.webp`;
     if (isEnergy && /^(sve|mee)$/i.test(setId)) {
-      const svg = makeEnergyCardSvg(name, num, setId, set.official);
-      imgSmall = svg;
-      imgLarge = svg;
+      const scan = getEnergyScan(setId, num);
+      if (scan) {
+        imgSmall = scan.low;
+        imgLarge = scan.high;
+      } else {
+        const svg = makeEnergyCardSvg(name, num, setId, set.official);
+        imgSmall = svg;
+        imgLarge = svg;
+      }
     }
     return {
       ...emptyOffline(),
@@ -796,7 +828,7 @@ const API = (() => {
 
   return {
     setKey, searchByCode, searchByName, getCard, getCardsBulk, getSets, getSetCards, getRates,
-    resolveOffline, translateJa, isEnergyCard, makeEnergyCardSvg,
+    resolveOffline, translateJa, isEnergyCard, makeEnergyCardSvg, getEnergyScan,
   };
 })();
 
